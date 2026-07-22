@@ -173,12 +173,15 @@ function listenPresence(){
   presenceRef(PARTNER_USER).on('value', (snap) => {
     const val = snap.val();
     const statusEl = document.getElementById('partnerStatus');
+    const dotEl = document.getElementById('onlineDot');
     if(val && val.online){
       statusEl.textContent = 'Online';
       statusEl.classList.add('online');
+      dotEl.classList.add('online');
     } else {
       statusEl.classList.remove('online');
       statusEl.textContent = val && val.lastSeen ? `Last seen ${timeAgo(val.lastSeen)}` : 'Offline';
+      dotEl.classList.remove('online');
     }
   });
 }
@@ -202,10 +205,9 @@ function listenTyping(){
   typingRef(PARTNER_USER).on('value', (snap) => {
     const val = snap.val();
     const row = document.getElementById('typingRow');
-    const txt = document.getElementById('typingText');
     if(val && val.typing && (Date.now() - val.ts) < 4000){
-      txt.textContent = `${CHAT_USERS[PARTNER_USER].name} is typing...`;
       row.classList.remove('hidden');
+      scrollToBottom();
     } else {
       row.classList.add('hidden');
     }
@@ -470,3 +472,36 @@ function timeAgo(ts){
   if(diffHr < 24) return `${diffHr} hr ago`;
   return `${Math.floor(diffHr/24)} days ago`;
 }
+
+// ---------- PWA: installable app ----------
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      console.warn('Service worker registration failed:', err);
+    });
+  });
+}
+
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if(installBtn) installBtn.classList.remove('hidden');
+});
+
+if(installBtn){
+  installBtn.addEventListener('click', async () => {
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installBtn.classList.add('hidden');
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  if(installBtn) installBtn.classList.add('hidden');
+});
+    
