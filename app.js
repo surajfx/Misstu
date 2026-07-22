@@ -1,5 +1,5 @@
 // ============================================
-// Duটি — Private two-person chat
+// Duo — Private two-person chat
 // ============================================
 
 firebase.initializeApp(firebaseConfig);
@@ -61,6 +61,7 @@ whoBtns.forEach(btn => {
     whoBtns.forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     selectedWho = btn.dataset.who;
+    lockError.textContent = '';
     checkEnterEnabled();
   });
 });
@@ -69,8 +70,9 @@ function checkEnterEnabled(){
   enterBtn.disabled = !(selectedWho && pinInput.value.length > 0);
 }
 enterBtn.addEventListener('click', () => {
-  if(pinInput.value !== CHAT_PIN){
-    lockError.textContent = 'পিন মিলছে না, আবার চেষ্টা করো।';
+  const user = CHAT_USERS[selectedWho];
+  if(!user || pinInput.value !== user.pin){
+    lockError.textContent = "That PIN doesn't match, try again.";
     return;
   }
   CURRENT_USER = selectedWho;
@@ -121,11 +123,11 @@ function listenPresence(){
     const val = snap.val();
     const statusEl = document.getElementById('partnerStatus');
     if(val && val.online){
-      statusEl.textContent = 'অনলাইন';
+      statusEl.textContent = 'Online';
       statusEl.classList.add('online');
     } else {
       statusEl.classList.remove('online');
-      statusEl.textContent = val && val.lastSeen ? `সর্বশেষ ${timeAgo(val.lastSeen)}` : 'অফলাইন';
+      statusEl.textContent = val && val.lastSeen ? `Last seen ${timeAgo(val.lastSeen)}` : 'Offline';
     }
   });
 }
@@ -151,7 +153,7 @@ function listenTyping(){
     const row = document.getElementById('typingRow');
     const txt = document.getElementById('typingText');
     if(val && val.typing && (Date.now() - val.ts) < 4000){
-      txt.textContent = `${CHAT_USERS[PARTNER_USER].name} লিখছে...`;
+      txt.textContent = `${CHAT_USERS[PARTNER_USER].name} is typing...`;
       row.classList.remove('hidden');
     } else {
       row.classList.add('hidden');
@@ -217,13 +219,13 @@ function renderMessage(id, msg){
 
   const meta = document.createElement('div');
   meta.className = 'meta-row';
-  meta.innerHTML = `<span class="time">${formatTime(msg.ts)}</span>` + (msg.edited ? ' <span class="edited-tag">এডিট করা</span>' : '');
+  meta.innerHTML = `<span class="time">${formatTime(msg.ts)}</span>` + (msg.edited ? ' <span class="edited-tag">edited</span>' : '');
   row.appendChild(meta);
 
   if(mine && msg.type === 'text'){
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
-    actions.innerHTML = `<button class="edit-a">এডিট</button><button class="del-a">মুছে ফেলো</button>`;
+    actions.innerHTML = `<button class="edit-a">Edit</button><button class="del-a">Delete</button>`;
     actions.querySelector('.edit-a').addEventListener('click', () => startEdit(id, msg.text));
     actions.querySelector('.del-a').addEventListener('click', () => deleteMessage(id));
     row.appendChild(actions);
@@ -243,7 +245,7 @@ function updateMessageEl(id, msg){
   if(bubble && msg.type === 'text') bubble.textContent = msg.text || '';
   const meta = row.querySelector('.meta-row');
   if(meta){
-    meta.innerHTML = `<span class="time">${formatTime(msg.ts)}</span>` + (msg.edited ? ' <span class="edited-tag">এডিট করা</span>' : '');
+    meta.innerHTML = `<span class="time">${formatTime(msg.ts)}</span>` + (msg.edited ? ' <span class="edited-tag">edited</span>' : '');
   }
 }
 
@@ -303,7 +305,7 @@ document.getElementById('cancelEdit').addEventListener('click', () => {
 });
 
 function deleteMessage(id){
-  if(confirm('এই মেসেজটা মুছে ফেলবে?')){
+  if(confirm('Delete this message?')){
     messagesRef().child(id).remove();
   }
 }
@@ -320,7 +322,7 @@ mediaInput.addEventListener('change', async () => {
   const fill = document.getElementById('uploadFill');
   const label = document.getElementById('uploadLabel');
   progressWrap.classList.remove('hidden');
-  label.textContent = isVideo ? 'ভিডিও আপলোড হচ্ছে...' : 'ছবি আপলোড হচ্ছে...';
+  label.textContent = isVideo ? 'Uploading video...' : 'Uploading photo...';
 
   try{
     const url = await uploadToCloudinary(file, (pct) => { fill.style.width = pct + '%'; });
@@ -332,7 +334,7 @@ mediaInput.addEventListener('change', async () => {
       edited: false
     });
   } catch(err){
-    alert('আপলোড ব্যর্থ হয়েছে। Cloudinary সেটআপ (config.js) ঠিক আছে কিনা দেখো।');
+    alert('Upload failed. Check your Cloudinary setup in config.js.');
     console.error(err);
   } finally {
     progressWrap.classList.add('hidden');
@@ -388,7 +390,7 @@ document.getElementById('closeLightbox').addEventListener('click', () => {
 
 // ---------- Logout ----------
 document.getElementById('logoutBtn').addEventListener('click', () => {
-  if(confirm('লগ আউট করবে?')){
+  if(confirm('Log out?')){
     presenceRef(CURRENT_USER).set({ online:false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
     localStorage.removeItem('duti_user');
     location.reload();
@@ -399,21 +401,21 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 function formatTime(ts){
   if(!ts) return '';
   const d = new Date(ts);
-  return d.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 function formatDay(ts){
   const d = new Date(ts);
   const today = new Date();
   const yest = new Date(); yest.setDate(today.getDate()-1);
-  if(d.toDateString() === today.toDateString()) return 'আজ';
-  if(d.toDateString() === yest.toDateString()) return 'গতকাল';
-  return d.toLocaleDateString('bn-BD', { day:'numeric', month:'long', year:'numeric' });
+  if(d.toDateString() === today.toDateString()) return 'Today';
+  if(d.toDateString() === yest.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { day:'numeric', month:'long', year:'numeric' });
 }
 function timeAgo(ts){
   const diffMin = Math.floor((Date.now() - ts) / 60000);
-  if(diffMin < 1) return 'এইমাত্র';
-  if(diffMin < 60) return `${diffMin} মিনিট আগে`;
+  if(diffMin < 1) return 'just now';
+  if(diffMin < 60) return `${diffMin} min ago`;
   const diffHr = Math.floor(diffMin/60);
-  if(diffHr < 24) return `${diffHr} ঘণ্টা আগে`;
-  return `${Math.floor(diffHr/24)} দিন আগে`;
-}
+  if(diffHr < 24) return `${diffHr} hr ago`;
+  return `${Math.floor(diffHr/24)} days ago`;
+                                      }
