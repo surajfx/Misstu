@@ -8,8 +8,8 @@
   --starlight:   #fbf2f5;
   --muted:       #b48d99;
 
-  --font-display: 'Fraunces', 'Noto Sans Bengali', serif;
-  --font-body: 'Inter', 'Noto Sans Bengali', sans-serif;
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Inter', sans-serif;
 }
 
 *{ box-sizing: border-box; }
@@ -79,6 +79,10 @@ html,body{
   font-family: var(--font-body);
 }
 #pinInput:focus{ outline: none; border-color: var(--ember-soft); }
+.pin-mask{
+  -webkit-text-security: disc;
+  text-security: disc;
+}
 
 .primary-btn{
   width: 100%; padding: 13px;
@@ -90,6 +94,14 @@ html,body{
 .primary-btn:disabled{ opacity: 0.4; cursor: not-allowed; }
 .lock-error{ color: #ff8484; font-size: 12.5px; min-height: 18px; margin-top: 12px; }
 
+.install-btn{
+  width: 100%; margin-top: 8px; padding: 11px;
+  border-radius: 12px; border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05); color: var(--starlight);
+  font-family: var(--font-body); font-weight: 600; font-size: 13.5px;
+  cursor: pointer;
+}
+
 /* ---------- CHAT HEADER ---------- */
 .chat-header{
   display:flex; align-items:center; justify-content: space-between;
@@ -100,6 +112,7 @@ html,body{
   flex-shrink: 0;
 }
 .partner-block{ display:flex; align-items:center; gap: 11px; }
+.avatar-wrap{ position: relative; flex-shrink: 0; }
 .avatar{
   width: 40px; height: 40px; border-radius: 50%;
   background: linear-gradient(135deg, var(--ember), #8a5cb8);
@@ -107,6 +120,17 @@ html,body{
   font-weight: 700; font-size: 16px; color: #fff;
   background-size: cover; background-position: center;
   flex-shrink: 0;
+}
+.online-dot{
+  position: absolute; bottom: -1px; right: -1px;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: #6b6478;
+  border: 2px solid var(--dusk-deep);
+  transition: background .2s ease;
+}
+.online-dot.online{
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74,222,128,0.7);
 }
 .partner-name{ font-weight: 700; font-size: 15.5px; }
 .partner-status{ font-size: 12px; color: var(--muted); margin-top: 1px; }
@@ -173,7 +197,23 @@ html,body{
 }
 
 /* ---------- TYPING ---------- */
-.typing-row{ padding: 0 18px 6px; font-size: 12.5px; color: var(--muted); font-style: italic; flex-shrink:0; }
+.typing-row{ padding: 2px 16px 8px; flex-shrink:0; }
+.typing-bubble{
+  display:inline-flex; align-items:center; gap: 4px;
+  background: rgba(255,255,255,0.08);
+  padding: 10px 14px; border-radius: 18px; border-bottom-left-radius: 5px;
+}
+.typing-dot{
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--mist);
+  animation: typingBounce 1.2s infinite ease-in-out;
+}
+.typing-dot:nth-child(2){ animation-delay: 0.15s; }
+.typing-dot:nth-child(3){ animation-delay: 0.3s; }
+@keyframes typingBounce{
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
 
 /* ---------- EDIT BANNER ---------- */
 .edit-banner{
