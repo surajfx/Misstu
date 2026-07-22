@@ -5,16 +5,18 @@
 // 1) Firebase Realtime Database config
 //    Firebase console (console.firebase.google.com) -> Project settings -> your web app -> config
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "0000000000",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDCb0OReMC3BScflE5lpvsp9F6Denq5nqM",
+  authDomain: "surajfx-dbfbf.firebaseapp.com",
+  databaseURL: "https://surajfx-dbfbf-default-rtdb.firebaseio.com",
+  projectId: "surajfx-dbfbf",
+  storageBucket: "surajfx-dbfbf.firebasestorage.app",
+  messagingSenderId: "1082799197835",
+  appId: "1:1082799197835:web:1a2fad3bea6f58b0570e8e",
+  measurementId: "G-7VEVP08DJ6"
 };
 
 // 2) Cloudinary (for photo & video uploads — the same one you already use on surajfx.in)
+// STILL NEEDED FROM YOU: your Cloudinary cloud name + an unsigned upload preset name
 const CLOUDINARY_CLOUD_NAME = "YOUR_CLOUD_NAME";
 const CLOUDINARY_UPLOAD_PRESET = "YOUR_UNSIGNED_UPLOAD_PRESET";
 
