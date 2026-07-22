@@ -14,37 +14,88 @@ const messagesRef = () => roomRef().child('messages');
 const presenceRef = (who) => roomRef().child(`presence/${who}`);
 const typingRef = (who) => roomRef().child(`typing/${who}`);
 
-// ---------- Star background ----------
-function initStars(){
-  const canvas = document.getElementById('stars');
+// ---------- Falling rose petals + hearts background ----------
+function initPetals(){
+  const canvas = document.getElementById('stars'); // kept original id, just draws petals now
   const ctx = canvas.getContext('2d');
-  let w, h, stars = [];
+  let w, h, particles = [];
+  const COUNT = 42;
+
+  function makeParticle(spawnAnywhereY){
+    const isHeart = Math.random() < 0.28;
+    return {
+      type: isHeart ? 'heart' : 'petal',
+      x: Math.random()*w,
+      y: spawnAnywhereY ? Math.random()*h : -20 - Math.random()*60,
+      size: isHeart ? (6 + Math.random()*6) : (7 + Math.random()*7),
+      speed: 0.35 + Math.random()*0.55,
+      sway: 0.6 + Math.random()*1.2,
+      swayFreq: 0.0006 + Math.random()*0.0008,
+      phase: Math.random()*Math.PI*2,
+      rot: Math.random()*Math.PI*2,
+      rotSpeed: (Math.random()-0.5) * 0.01,
+      opacity: 0.45 + Math.random()*0.4
+    };
+  }
+
   function resize(){
     w = canvas.width = window.innerWidth;
     h = canvas.height = window.innerHeight;
-    stars = Array.from({length: 90}, () => ({
-      x: Math.random()*w, y: Math.random()*h,
-      r: Math.random()*1.3 + 0.3,
-      s: Math.random()*0.02 + 0.005,
-      phase: Math.random()*Math.PI*2
-    }));
+    particles = Array.from({length: COUNT}, () => makeParticle(true));
   }
+
+  function drawPetal(p){
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.globalAlpha = p.opacity;
+    const s = p.size;
+    const grad = ctx.createLinearGradient(-s, -s, s, s);
+    grad.addColorStop(0, 'rgba(255,158,181,0.95)');
+    grad.addColorStop(1, 'rgba(196,42,90,0.95)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.bezierCurveTo(s*0.85, -s*0.35, s*0.6, s*0.75, 0, s);
+    ctx.bezierCurveTo(-s*0.6, s*0.75, -s*0.85, -s*0.35, 0, -s);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHeart(p){
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.globalAlpha = p.opacity;
+    const s = p.size;
+    ctx.fillStyle = 'rgba(255,99,138,0.9)';
+    ctx.beginPath();
+    ctx.moveTo(0, s*0.35);
+    ctx.bezierCurveTo(s, -s*0.55, s*0.5, -s*1.25, 0, -s*0.45);
+    ctx.bezierCurveTo(-s*0.5, -s*1.25, -s, -s*0.55, 0, s*0.35);
+    ctx.fill();
+    ctx.restore();
+  }
+
   function draw(t){
     ctx.clearRect(0,0,w,h);
-    for(const st of stars){
-      const alpha = 0.35 + 0.5*Math.abs(Math.sin(t*st.s + st.phase));
-      ctx.beginPath();
-      ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(245,242,251,${alpha})`;
-      ctx.fill();
+    for(const p of particles){
+      p.y += p.speed;
+      p.x += Math.sin(t*p.swayFreq + p.phase) * p.sway * 0.05;
+      p.rot += p.rotSpeed;
+      if(p.y - p.size > h){
+        Object.assign(p, makeParticle(false));
+      }
+      if(p.type === 'heart') drawHeart(p); else drawPetal(p);
     }
     requestAnimationFrame(draw);
   }
+
   window.addEventListener('resize', resize);
   resize();
   requestAnimationFrame(draw);
 }
-initStars();
+initPetals();
 
 // ---------- Lock screen ----------
 const whoBtns = document.querySelectorAll('.who-btn');
@@ -418,4 +469,4 @@ function timeAgo(ts){
   const diffHr = Math.floor(diffMin/60);
   if(diffHr < 24) return `${diffHr} hr ago`;
   return `${Math.floor(diffHr/24)} days ago`;
-                                      }
+}
