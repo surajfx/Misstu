@@ -504,4 +504,4 @@ if(installBtn){
 window.addEventListener('appinstalled', () => {
   if(installBtn) installBtn.classList.add('hidden');
 });
-    
+                                 
