@@ -8,8 +8,8 @@
   --starlight:   #f5f2fb;
   --muted:       #9c8fbb;
 
-  --font-display: 'Fraunces', 'Noto Sans Bengali', serif;
-  --font-body: 'Inter', 'Noto Sans Bengali', sans-serif;
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Inter', sans-serif;
 }
 
 *{ box-sizing: border-box; }
