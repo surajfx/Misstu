@@ -16,9 +16,8 @@ const firebaseConfig = {
 };
 
 // 2) Cloudinary (for photo & video uploads — the same one you already use on surajfx.in)
-// STILL NEEDED FROM YOU: your Cloudinary cloud name + an unsigned upload preset name
-const CLOUDINARY_CLOUD_NAME = "YOUR_CLOUD_NAME";
-const CLOUDINARY_UPLOAD_PRESET = "YOUR_UNSIGNED_UPLOAD_PRESET";
+const CLOUDINARY_CLOUD_NAME = "djq3xu2fg";
+const CLOUDINARY_UPLOAD_PRESET = "ml_default";
 
 // 3) The two names, avatars, and each person's own PIN
 //    (avatar shows the first letter of the name if you don't give an image URL)
