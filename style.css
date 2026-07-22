@@ -1,15 +1,15 @@
 :root{
-  --dusk-deep:   #150f24;
-  --dusk-violet: #2a1c47;
-  --plum-glass:  rgba(58, 41, 89, 0.55);
+  --dusk-deep:   #1c0f16;
+  --dusk-violet: #3a1626;
+  --plum-glass:  rgba(74, 25, 45, 0.55);
   --ember:       #e8825a;
   --ember-soft:  #f0a679;
-  --mist:        #d9d3ec;
-  --starlight:   #f5f2fb;
-  --muted:       #9c8fbb;
+  --mist:        #ecd6dd;
+  --starlight:   #fbf2f5;
+  --muted:       #b48d99;
 
-  --font-display: 'Fraunces', serif;
-  --font-body: 'Inter', sans-serif;
+  --font-display: 'Fraunces', 'Noto Sans Bengali', serif;
+  --font-body: 'Inter', 'Noto Sans Bengali', sans-serif;
 }
 
 *{ box-sizing: border-box; }
@@ -24,7 +24,7 @@ html,body{
 
 #stars{
   position: fixed; inset: 0; z-index: 0;
-  background: radial-gradient(ellipse at 30% 0%, #2f2050 0%, #150f24 65%);
+  background: radial-gradient(ellipse at 30% 0%, #4a1c2e 0%, #1c0f16 65%);
 }
 
 .screen{
