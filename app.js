@@ -378,7 +378,7 @@ mediaInput.addEventListener('change', async () => {
   label.textContent = isVideo ? 'Uploading video...' : 'Uploading photo...';
 
   try{
-    const url = await uploadToCloudinary(file, (pct) => { fill.style.width = pct + '%'; });
+    const url = await uploadToCloudinary(file, isVideo, (pct) => { fill.style.width = pct + '%'; });
     messagesRef().push({
       sender: CURRENT_USER,
       type: isVideo ? 'video' : 'image',
@@ -387,7 +387,7 @@ mediaInput.addEventListener('change', async () => {
       edited: false
     });
   } catch(err){
-    alert('Upload failed. Check your Cloudinary setup in config.js.');
+    alert('Upload failed: ' + err.message);
     console.error(err);
   } finally {
     progressWrap.classList.add('hidden');
@@ -396,9 +396,10 @@ mediaInput.addEventListener('change', async () => {
   }
 });
 
-function uploadToCloudinary(file, onProgress){
+function uploadToCloudinary(file, isVideo, onProgress){
   return new Promise((resolve, reject) => {
-    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+    const resourceType = isVideo ? 'video' : 'image';
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -413,10 +414,12 @@ function uploadToCloudinary(file, onProgress){
         const res = JSON.parse(xhr.responseText);
         resolve(res.secure_url);
       } else {
-        reject(new Error('Upload failed: ' + xhr.status));
+        let msg = 'HTTP ' + xhr.status;
+        try{ msg = JSON.parse(xhr.responseText).error.message; } catch(e){}
+        reject(new Error(msg));
       }
     };
-    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.onerror = () => reject(new Error('Network error — could not reach Cloudinary'));
     xhr.send(formData);
   });
 }
@@ -504,4 +507,4 @@ if(installBtn){
 window.addEventListener('appinstalled', () => {
   if(installBtn) installBtn.classList.add('hidden');
 });
-                                 
+    
