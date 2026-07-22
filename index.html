@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-<title>Duo • Private Chat</title>
+<title>Duটি • Private Chat</title>
 <meta name="theme-color" content="#1a1229">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,11 +17,11 @@
 <div id="lockScreen" class="screen">
   <div class="lock-card">
     <div class="lock-glyph">✦</div>
-    <h1 class="brand">Duo</h1>
-    <p class="tagline">Just a space for the two of you</p>
+    <h1 class="brand">Duটি</h1>
+    <p class="tagline">শুধু তোমাদের দুজনের জায়গা</p>
 
     <div class="field">
-      <label>Who are you?</label>
+      <label>তুমি কে?</label>
       <div class="who-toggle">
         <button type="button" class="who-btn" data-who="a">USER_A_NAME</button>
         <button type="button" class="who-btn" data-who="b">USER_B_NAME</button>
@@ -29,11 +29,11 @@
     </div>
 
     <div class="field">
-      <label for="pinInput">PIN code</label>
-      <input type="password" id="pinInput" inputmode="text" placeholder="••••" maxlength="24">
+      <label for="pinInput">পিন কোড</label>
+      <input type="password" id="pinInput" inputmode="numeric" placeholder="••••" maxlength="12">
     </div>
 
-    <button id="enterBtn" class="primary-btn" disabled>Enter</button>
+    <button id="enterBtn" class="primary-btn" disabled>ঢুকো</button>
     <p id="lockError" class="lock-error"></p>
   </div>
 </div>
@@ -45,10 +45,10 @@
       <div class="avatar" id="partnerAvatar">P</div>
       <div class="partner-info">
         <div class="partner-name" id="partnerName">Partner</div>
-        <div class="partner-status" id="partnerStatus">Offline</div>
+        <div class="partner-status" id="partnerStatus">অফলাইন</div>
       </div>
     </div>
-    <button id="logoutBtn" class="icon-btn" title="Log out">⎋</button>
+    <button id="logoutBtn" class="icon-btn" title="লগ আউট">⎋</button>
   </header>
 
   <main id="messages" class="messages"></main>
@@ -58,22 +58,22 @@
   </div>
 
   <div id="editBanner" class="edit-banner hidden">
-    <span>Editing message</span>
-    <button id="cancelEdit">Cancel</button>
+    <span>মেসেজ এডিট করছো</span>
+    <button id="cancelEdit">বাতিল</button>
   </div>
 
   <footer class="composer">
     <input type="file" id="mediaInput" accept="image/*,video/*" hidden>
-    <button id="attachBtn" class="icon-btn" title="Send photo/video">📎</button>
+    <button id="attachBtn" class="icon-btn" title="ছবি/ভিডিও পাঠাও">📎</button>
     <div class="input-wrap">
-      <textarea id="textInput" rows="1" placeholder="Type a message..."></textarea>
+      <textarea id="textInput" rows="1" placeholder="মেসেজ লেখো..."></textarea>
     </div>
-    <button id="sendBtn" class="send-btn" title="Send">➤</button>
+    <button id="sendBtn" class="send-btn" title="পাঠাও">➤</button>
   </footer>
 
   <div id="uploadProgress" class="upload-progress hidden">
     <div class="upload-bar"><div id="uploadFill" class="upload-fill"></div></div>
-    <span id="uploadLabel">Uploading...</span>
+    <span id="uploadLabel">আপলোড হচ্ছে...</span>
   </div>
 </div>
 
