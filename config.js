@@ -1,5 +1,5 @@
 // ============================================
-// এখানে নিজের তথ্য বসাও — বাকি কোড ছোঁয়া লাগবে না
+// Put your own details here — you don't need to touch the rest of the code
 // ============================================
 
 // 1) Firebase Realtime Database config
@@ -14,18 +14,17 @@ const firebaseConfig = {
   appId: "YOUR_APP_ID"
 };
 
-// 2) Cloudinary (ছবি ও ভিডিও আপলোডের জন্য — surajfx.in এ যেটা আগে থেকেই ব্যবহার করছো)
+// 2) Cloudinary (for photo & video uploads — the same one you already use on surajfx.in)
 const CLOUDINARY_CLOUD_NAME = "YOUR_CLOUD_NAME";
 const CLOUDINARY_UPLOAD_PRESET = "YOUR_UNSIGNED_UPLOAD_PRESET";
 
-// 3) দুজনের নাম ও ছবি (avatar এ প্রথম অক্ষর দেখাবে যদি ছবি না দাও)
+// 3) The two names, avatars, and each person's own PIN
+//    (avatar shows the first letter of the name if you don't give an image URL)
 const CHAT_USERS = {
-  a: { name: "USER_A_NAME", avatar: "" }, // avatar এ চাইলে image URL দিতে পারো
-  b: { name: "USER_B_NAME", avatar: "" }
+  a: { name: "suraj",  avatar: "", pin: "misstu" },
+  b: { name: "misstu", avatar: "", pin: "suraj" }
 };
 
-// 4) দুজনের শেয়ার করা পিন কোড (সহজ লক — Firebase Auth নয়, দ্রুত ঢোকার জন্য)
-const CHAT_PIN = "1234";
-
-// 5) এই চ্যাটের ইউনিক নাম — একই Firebase প্রজেক্টে অন্য অ্যাপ থাকলেও যাতে ডেটা না মেশে
+// 4) This chat's unique room name — keeps data separate even if you reuse this
+//    Firebase project for another app
 const CHAT_ROOM_ID = "duti-private-room";
