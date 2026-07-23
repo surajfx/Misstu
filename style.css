@@ -380,4 +380,50 @@ html,body{
   font-size: 11px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 .gallery-empty{ text-align:center; color: var(--muted); margin-top: 60px; font-size: 13.5px; }
-                                                         
+
+/* ---------- SPECIAL MOMENT ANIMATIONS ---------- */
+.fx-layer{
+  position: fixed; inset: 0; z-index: 90;
+  pointer-events: none; overflow: hidden;
+}
+.fx-flash{ animation: fxFlashFade 3.2s ease forwards; }
+@keyframes fxFlashFade{
+  0%{ opacity: 0; }
+  15%{ opacity: 0.6; }
+  70%{ opacity: 0.25; }
+  100%{ opacity: 0; }
+}
+.fx-piece{
+  position: absolute; top: -60px;
+  animation-name: fxFall; animation-timing-function: ease-in; animation-fill-mode: forwards;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+}
+@keyframes fxFall{
+  0%{ transform: translateY(0) rotate(0deg); opacity: 0; }
+  10%{ opacity: 1; }
+  100%{ transform: translateY(112vh) rotate(360deg); opacity: 0.9; }
+}
+.fx-center-emoji{
+  position: absolute; left: 50%; bottom: -80px; transform: translateX(-50%);
+  font-size: 84px; animation: fxRise 3.2s ease forwards;
+}
+@keyframes fxRise{
+  0%{ bottom: -80px; opacity: 0; }
+  30%{ opacity: 1; }
+  70%{ bottom: 38%; opacity: 1; }
+  100%{ bottom: 40%; opacity: 0; }
+}
+.fx-label{
+  position: absolute; top: 40%; left: 50%; transform: translate(-50%, -40%);
+  font-family: var(--font-display); font-style: italic; font-weight: 600;
+  font-size: 24px; color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,0.55);
+  text-align: center; white-space: nowrap;
+  animation: fxLabelFade 3.2s ease forwards;
+}
+@keyframes fxLabelFade{
+  0%{ opacity: 0; transform: translate(-50%, -32%); }
+  20%{ opacity: 1; transform: translate(-50%, -40%); }
+  75%{ opacity: 1; }
+  100%{ opacity: 0; }
+  }
+  
