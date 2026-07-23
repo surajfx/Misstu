@@ -14,6 +14,7 @@ const messagesRef = () => roomRef().child('messages');
 const presenceRef = (who) => roomRef().child(`presence/${who}`);
 const typingRef = (who) => roomRef().child(`typing/${who}`);
 const readsRef = (who) => roomRef().child(`reads/${who}`);
+const pinnedRef = () => roomRef().child('pinned');
 
 // ---------- Falling rose petals + hearts background ----------
 function initPetals(){
@@ -153,7 +154,9 @@ function enterChat(){
   listenTyping();
   listenMessages();
   listenReads();
+  listenPinned();
   markAsRead();
+  updateTogetherPill();
 
   document.addEventListener('visibilitychange', () => {
     if(!document.hidden) markAsRead();
@@ -262,23 +265,34 @@ function renderMessage(id, msg){
   if(mine) row.dataset.ts = msg.ts;
 
   const bubble = document.createElement('div');
-  bubble.className = 'bubble' + (msg.type !== 'text' ? ' media' : '');
+  const isMedia = msg.type === 'image' || msg.type === 'video';
+  bubble.className = 'bubble' + (isMedia ? ' media' : '');
 
   if(msg.type === 'image'){
     const img = document.createElement('img');
     img.src = msg.mediaUrl;
-    img.addEventListener('click', () => openLightbox('image', msg.mediaUrl));
     bubble.appendChild(img);
+    attachMediaTap(bubble, id, 'image', msg.mediaUrl);
   } else if(msg.type === 'video'){
     const vid = document.createElement('video');
     vid.src = msg.mediaUrl;
     vid.muted = true; vid.playsInline = true;
-    vid.addEventListener('click', () => openLightbox('video', msg.mediaUrl));
     bubble.appendChild(vid);
+    attachMediaTap(bubble, id, 'video', msg.mediaUrl);
+  } else if(msg.type === 'audio'){
+    const wrap = document.createElement('div');
+    wrap.className = 'voice-msg';
+    wrap.innerHTML = `🎤 <audio controls src="${msg.mediaUrl}"></audio>`;
+    bubble.appendChild(wrap);
   } else {
     bubble.innerHTML = linkify(msg.text || '');
   }
   row.appendChild(bubble);
+  attachLongPress(bubble, () => openReactionPicker(bubble, id, msg));
+
+  const chipsHost = document.createElement('div');
+  chipsHost.className = 'reaction-chips-host';
+  row.appendChild(chipsHost);
 
   const meta = document.createElement('div');
   meta.className = 'meta-row';
@@ -302,6 +316,7 @@ function renderMessage(id, msg){
 
   messagesEl.appendChild(row);
   if(mine) applyTickState(row, msg.ts);
+  renderReactionChips(row, msg.reactions);
 }
 
 function updateMessageEl(id, msg){
@@ -317,6 +332,192 @@ function updateMessageEl(id, msg){
       (mine ? ` <span class="ticks">${tickSvg(false)}</span>` : '');
     if(mine) applyTickState(row, msg.ts);
   }
+  renderReactionChips(row, msg.reactions);
+}
+
+// ---------- Long-press: reactions + pin ----------
+function attachLongPress(el, onLongPress){
+  let timer, longPressed = false;
+  const start = () => {
+    longPressed = false;
+    timer = setTimeout(() => { longPressed = true; onLongPress(); }, 450);
+  };
+  const cancel = () => clearTimeout(timer);
+  el.addEventListener('touchstart', start, { passive: true });
+  el.addEventListener('touchend', cancel);
+  el.addEventListener('touchmove', cancel);
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', cancel);
+  el.addEventListener('mouseleave', cancel);
+  el.addEventListener('click', (e) => {
+    if(longPressed){ e.stopPropagation(); e.preventDefault(); longPressed = false; }
+  }, true);
+}
+
+function openReactionPicker(anchorEl, id, msg){
+  const picker = document.getElementById('reactionPicker');
+  const rect = anchorEl.getBoundingClientRect();
+  picker.style.top = Math.max(10, rect.top - 56) + 'px';
+  let left = rect.left + rect.width/2 - 115;
+  left = Math.max(8, Math.min(left, window.innerWidth - 238));
+  picker.style.left = left + 'px';
+  picker.classList.remove('hidden');
+
+  picker.querySelectorAll('.react-emoji').forEach((el) => {
+    el.onclick = () => { toggleReaction(id, el.dataset.emoji); closeReactionPicker(); };
+  });
+  document.getElementById('pickerPinBtn').onclick = () => { togglePin(id, msg); closeReactionPicker(); };
+
+  setTimeout(() => document.addEventListener('click', outsidePickerClick), 0);
+}
+function outsidePickerClick(e){
+  const picker = document.getElementById('reactionPicker');
+  if(!picker.contains(e.target)) closeReactionPicker();
+}
+function closeReactionPicker(){
+  document.getElementById('reactionPicker').classList.add('hidden');
+  document.removeEventListener('click', outsidePickerClick);
+}
+
+// ---------- Reactions ----------
+function toggleReaction(id, emoji){
+  const ref = messagesRef().child(id).child('reactions').child(CURRENT_USER);
+  ref.once('value').then((snap) => {
+    if(snap.val() === emoji) ref.remove(); else ref.set(emoji);
+  });
+}
+
+function renderReactionChips(row, reactions){
+  const host = row.querySelector('.reaction-chips-host');
+  if(!host) return;
+  if(!reactions || Object.keys(reactions).length === 0){
+    host.innerHTML = '';
+    return;
+  }
+  const counts = {};
+  Object.values(reactions).forEach((e) => { counts[e] = (counts[e] || 0) + 1; });
+  host.innerHTML = `<div class="reaction-chips">` +
+    Object.entries(counts).map(([emoji, count]) =>
+      `<span class="reaction-chip">${emoji}${count > 1 ? `<span class="count">${count}</span>` : ''}</span>`
+    ).join('') + `</div>`;
+}
+
+// ---------- Double-tap like on media ----------
+function attachMediaTap(bubble, id, type, url){
+  let lastTap = 0;
+  bubble.addEventListener('click', () => {
+    const now = Date.now();
+    if(now - lastTap < 300){
+      toggleReaction(id, '❤️');
+      showHeartBurst(bubble);
+      lastTap = 0;
+    } else {
+      lastTap = now;
+      setTimeout(() => {
+        if(Date.now() - lastTap >= 300) openLightbox(type, url);
+      }, 300);
+    }
+  });
+}
+function showHeartBurst(bubble){
+  const heart = document.createElement('div');
+  heart.className = 'heart-burst';
+  heart.textContent = '❤️';
+  bubble.appendChild(heart);
+  setTimeout(() => heart.remove(), 800);
+}
+
+// ---------- Pinned message ----------
+function togglePin(id, msg){
+  pinnedRef().once('value').then((snap) => {
+    const current = snap.val();
+    if(current && current.id === id){
+      pinnedRef().remove();
+    } else {
+      const preview = msg.type === 'text' ? (msg.text || '')
+        : msg.type === 'image' ? '📷 Photo'
+        : msg.type === 'video' ? '🎥 Video'
+        : '🎤 Voice message';
+      pinnedRef().set({ id, preview, sender: msg.sender, ts: msg.ts });
+    }
+  });
+}
+function listenPinned(){
+  pinnedRef().on('value', (snap) => {
+    const val = snap.val();
+    const banner = document.getElementById('pinnedBanner');
+    const textEl = document.getElementById('pinnedText');
+    if(val){
+      const who = val.sender === CURRENT_USER ? 'You' : CHAT_USERS[PARTNER_USER].name;
+      textEl.textContent = `${who}: ${val.preview}`;
+      banner.classList.remove('hidden');
+      banner.dataset.msgId = val.id;
+    } else {
+      banner.classList.add('hidden');
+    }
+  });
+}
+document.getElementById('pinnedBanner').addEventListener('click', (e) => {
+  if(e.target.id === 'unpinBtn') return;
+  const id = document.getElementById('pinnedBanner').dataset.msgId;
+  const el = document.getElementById('m_' + id);
+  if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+document.getElementById('unpinBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  pinnedRef().remove();
+});
+
+// ---------- Gallery ----------
+function openGallery(){
+  document.getElementById('galleryScreen').classList.remove('hidden');
+  const grid = document.getElementById('galleryGrid');
+  const empty = document.getElementById('galleryEmpty');
+  grid.innerHTML = '';
+  empty.classList.add('hidden');
+
+  messagesRef().orderByChild('ts').once('value').then((snap) => {
+    const items = [];
+    snap.forEach((child) => {
+      const m = child.val();
+      if(m.type === 'image' || m.type === 'video') items.push(m);
+    });
+    if(items.length === 0){
+      empty.classList.remove('hidden');
+      return;
+    }
+    items.reverse().forEach((m) => {
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb' + (m.type === 'video' ? ' is-video' : '');
+      if(m.type === 'image'){
+        const img = document.createElement('img');
+        img.src = m.mediaUrl;
+        thumb.appendChild(img);
+      } else {
+        const vid = document.createElement('video');
+        vid.src = m.mediaUrl; vid.muted = true;
+        thumb.appendChild(vid);
+      }
+      thumb.addEventListener('click', () => openLightbox(m.type, m.mediaUrl));
+      grid.appendChild(thumb);
+    });
+  });
+}
+document.getElementById('galleryBtn').addEventListener('click', openGallery);
+document.getElementById('closeGalleryBtn').addEventListener('click', () => {
+  document.getElementById('galleryScreen').classList.add('hidden');
+});
+
+// ---------- Together-since day counter ----------
+function updateTogetherPill(){
+  if(typeof TOGETHER_SINCE_DATE === 'undefined') return;
+  const start = new Date(TOGETHER_SINCE_DATE + 'T00:00:00');
+  if(isNaN(start.getTime())) return;
+  const diffDays = Math.floor((Date.now() - start.getTime()) / 86400000);
+  if(diffDays < 0) return;
+  const pill = document.getElementById('togetherPill');
+  pill.textContent = `💕 Day ${diffDays}`;
+  pill.classList.remove('hidden');
 }
 
 // ---------- Clickable links ----------
@@ -426,6 +627,9 @@ document.getElementById('cancelEdit').addEventListener('click', () => {
 function deleteMessage(id){
   if(confirm('Delete this message?')){
     messagesRef().child(id).remove();
+    pinnedRef().once('value').then((snap) => {
+      if(snap.val() && snap.val().id === id) pinnedRef().remove();
+    });
   }
 }
 
@@ -488,6 +692,84 @@ function uploadToCloudinary(file, isVideo, onProgress){
     xhr.onerror = () => reject(new Error('Network error — could not reach Cloudinary'));
     xhr.send(formData);
   });
+}
+
+// ---------- Voice messages ----------
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingStartTime = 0;
+let recordingTimerInterval = null;
+
+document.getElementById('micBtn').addEventListener('click', startRecording);
+document.getElementById('cancelRecording').addEventListener('click', cancelRecording);
+document.getElementById('sendRecording').addEventListener('click', stopAndSendRecording);
+
+async function startRecording(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder._stream = stream;
+    mediaRecorder.ondataavailable = (e) => { if(e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.start();
+    recordingStartTime = Date.now();
+    document.getElementById('recordingBar').classList.remove('hidden');
+    document.querySelector('.composer').classList.add('hidden');
+    recordingTimerInterval = setInterval(updateRecordingTime, 250);
+  } catch(err){
+    alert('Could not access the microphone: ' + err.message);
+  }
+}
+function updateRecordingTime(){
+  const secs = Math.floor((Date.now() - recordingStartTime) / 1000);
+  const m = Math.floor(secs / 60), s = secs % 60;
+  document.getElementById('recordingTime').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+}
+function stopRecordingUI(){
+  clearInterval(recordingTimerInterval);
+  if(mediaRecorder && mediaRecorder._stream) mediaRecorder._stream.getTracks().forEach((t) => t.stop());
+  document.getElementById('recordingBar').classList.add('hidden');
+  document.querySelector('.composer').classList.remove('hidden');
+}
+function cancelRecording(){
+  if(mediaRecorder && mediaRecorder.state !== 'inactive'){
+    mediaRecorder.onstop = null;
+    mediaRecorder.stop();
+  }
+  recordedChunks = [];
+  stopRecordingUI();
+}
+function stopAndSendRecording(){
+  if(!mediaRecorder || mediaRecorder.state === 'inactive') return;
+  mediaRecorder.onstop = async () => {
+    stopRecordingUI();
+    if(recordedChunks.length === 0) return;
+    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+    const file = new File([blob], `voice-${Date.now()}.webm`, { type: 'audio/webm' });
+
+    const progressWrap = document.getElementById('uploadProgress');
+    const fill = document.getElementById('uploadFill');
+    const label = document.getElementById('uploadLabel');
+    progressWrap.classList.remove('hidden');
+    label.textContent = 'Sending voice message...';
+
+    try{
+      const url = await uploadToCloudinary(file, true, (pct) => { fill.style.width = pct + '%'; });
+      messagesRef().push({
+        sender: CURRENT_USER,
+        type: 'audio',
+        mediaUrl: url,
+        ts: firebase.database.ServerValue.TIMESTAMP,
+        edited: false
+      });
+    } catch(err){
+      alert('Voice message failed to send: ' + err.message);
+    } finally {
+      progressWrap.classList.add('hidden');
+      fill.style.width = '0%';
+    }
+  };
+  mediaRecorder.stop();
 }
 
 // ---------- Lightbox ----------
@@ -575,5 +857,4 @@ if(installBtn){
       alert('To install: open the browser menu (⋮) and tap "Install app" or "Add to Home screen".');
     }
   });
-                         }
-      
+}
