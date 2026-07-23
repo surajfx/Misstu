@@ -8,6 +8,7 @@ const db = firebase.database();
 let CURRENT_USER = localStorage.getItem('duti_user') || null; // 'a' or 'b'
 let PARTNER_USER = null;
 let editingMsgId = null;
+const sessionStartTs = Date.now() - 2000; // small buffer for server clock skew
 
 const roomRef = () => db.ref(`rooms/${CHAT_ROOM_ID}`);
 const messagesRef = () => roomRef().child('messages');
@@ -231,9 +232,13 @@ let renderedIds = new Set();
 
 function listenMessages(){
   messagesRef().orderByChild('ts').on('child_added', (snap) => {
-    renderMessage(snap.key, snap.val());
+    const msg = snap.val();
+    renderMessage(snap.key, msg);
     scrollToBottom();
-    if(!document.hidden && snap.val().sender === PARTNER_USER) markAsRead();
+    if(!document.hidden && msg.sender === PARTNER_USER) markAsRead();
+    if(msg.ts && msg.ts >= sessionStartTs && msg.type === 'text'){
+      checkForTriggerAnimation(msg.text);
+    }
   });
   messagesRef().on('child_changed', (snap) => {
     updateMessageEl(snap.key, snap.val());
@@ -822,6 +827,100 @@ function timeAgo(ts){
   const diffHr = Math.floor(diffMin/60);
   if(diffHr < 24) return `${diffHr} hr ago`;
   return `${Math.floor(diffHr/24)} days ago`;
+}
+
+// ---------- Special-moment animations ----------
+function playEmojiBurst({ emojis, count = 24, duration = 3200, fontSizeRange = [24, 40], flashColor = null, centerEmoji = null, label = null }){
+  const layer = document.createElement('div');
+  layer.className = 'fx-layer';
+  document.body.appendChild(layer);
+
+  if(flashColor){
+    layer.style.background = flashColor;
+    layer.classList.add('fx-flash');
+  }
+  if(centerEmoji){
+    const center = document.createElement('div');
+    center.className = 'fx-center-emoji';
+    center.textContent = centerEmoji;
+    layer.appendChild(center);
+  }
+  if(label){
+    const lbl = document.createElement('div');
+    lbl.className = 'fx-label';
+    lbl.textContent = label;
+    layer.appendChild(lbl);
+  }
+  for(let i = 0; i < count; i++){
+    const span = document.createElement('span');
+    span.className = 'fx-piece';
+    span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    const size = fontSizeRange[0] + Math.random() * (fontSizeRange[1] - fontSizeRange[0]);
+    span.style.fontSize = size + 'px';
+    span.style.left = Math.random() * 100 + 'vw';
+    span.style.animationDelay = (Math.random() * 0.6) + 's';
+    span.style.animationDuration = (2.2 + Math.random() * 1.4) + 's';
+    layer.appendChild(span);
+  }
+  setTimeout(() => layer.remove(), duration);
+}
+
+function playRoseBurst(){
+  playEmojiBurst({
+    emojis: ['🌹', '❤️', '💗'],
+    count: 30, duration: 3400, fontSizeRange: [24, 40],
+    label: '❤️ I love you too ❤️'
+  });
+}
+function playGoodNight(){
+  playEmojiBurst({
+    emojis: ['⭐', '✨', '🌙'],
+    count: 20, duration: 3600, fontSizeRange: [15, 26],
+    flashColor: 'radial-gradient(ellipse at 50% 100%, rgba(60,40,110,0.55), rgba(10,6,20,0.7))',
+    centerEmoji: '🌙',
+    label: 'Good night 🌙'
+  });
+}
+function playGoodMorning(){
+  playEmojiBurst({
+    emojis: ['✨', '🌸', '🐦'],
+    count: 18, duration: 3400, fontSizeRange: [15, 24],
+    flashColor: 'radial-gradient(ellipse at 50% 0%, rgba(255,190,120,0.5), rgba(255,140,90,0.12))',
+    centerEmoji: '🌞',
+    label: 'Good morning ☀️'
+  });
+}
+function playMissYou(){
+  playEmojiBurst({
+    emojis: ['❤️', '💌', '🥺'],
+    count: 20, duration: 3200, fontSizeRange: [20, 32],
+    label: 'Missing you too 💌'
+  });
+}
+function playBirthday(){
+  playEmojiBurst({
+    emojis: ['🎉', '🎂', '✨', '🎈'],
+    count: 34, duration: 3600, fontSizeRange: [18, 30],
+    label: '🎉 Happy Birthday! 🎉'
+  });
+}
+function playCongrats(){
+  playEmojiBurst({
+    emojis: ['🎉', '👏', '✨', '🥳'],
+    count: 26, duration: 3200, fontSizeRange: [18, 30],
+    label: '🎉 Congratulations! 🎉'
+  });
+}
+
+function checkForTriggerAnimation(text){
+  if(!text) return;
+  const t = text.toLowerCase();
+  if(/i\s*love\s*you|love\s*(u|you)\b|ভালোবাসি/.test(t)) playRoseBurst();
+  else if(/good\s*ni?ght|goodnight/.test(t)) playGoodNight();
+  else if(/good\s*morning|goodmorning/.test(t)) playGoodMorning();
+  else if(/miss\s*(u|you)\b/.test(t)) playMissYou();
+  else if(/happy\s*birthday/.test(t)) playBirthday();
+  else if(/congrat/.test(t)) playCongrats();
 }
 
 // ---------- PWA: installable app ----------
