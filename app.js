@@ -306,11 +306,13 @@ function renderMessage(id, msg){
     (mine ? ` <span class="ticks">${tickSvg(false)}</span>` : '');
   row.appendChild(meta);
 
-  if(mine && msg.type === 'text'){
+  if(mine){
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
-    actions.innerHTML = `<button class="edit-a">Edit</button><button class="del-a">Delete</button>`;
-    actions.querySelector('.edit-a').addEventListener('click', () => startEdit(id, msg.text));
+    actions.innerHTML = (msg.type === 'text' ? `<button class="edit-a">Edit</button>` : '') +
+      `<button class="del-a">Delete</button>`;
+    const editBtn = actions.querySelector('.edit-a');
+    if(editBtn) editBtn.addEventListener('click', () => startEdit(id, msg.text));
     actions.querySelector('.del-a').addEventListener('click', () => deleteMessage(id));
     row.appendChild(actions);
     row.addEventListener('click', (e) => {
@@ -956,4 +958,4 @@ if(installBtn){
       alert('To install: open the browser menu (⋮) and tap "Install app" or "Add to Home screen".');
     }
   });
-}
+    }
