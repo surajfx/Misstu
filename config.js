@@ -29,3 +29,6 @@ const CHAT_USERS = {
 // 4) This chat's unique room name — keeps data separate even if you reuse this
 //    Firebase project for another app
 const CHAT_ROOM_ID = "duti-private-room";
+
+// 5) The date you two got together (for the "X days together" counter). Format: YYYY-MM-DD
+const TOGETHER_SINCE_DATE = "2024-01-01"; // <-- change this to your real date!
