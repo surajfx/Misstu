@@ -13,6 +13,7 @@ const roomRef = () => db.ref(`rooms/${CHAT_ROOM_ID}`);
 const messagesRef = () => roomRef().child('messages');
 const presenceRef = (who) => roomRef().child(`presence/${who}`);
 const typingRef = (who) => roomRef().child(`typing/${who}`);
+const readsRef = (who) => roomRef().child(`reads/${who}`);
 
 // ---------- Falling rose petals + hearts background ----------
 function initPetals(){
@@ -151,6 +152,13 @@ function enterChat(){
   listenPresence();
   listenTyping();
   listenMessages();
+  listenReads();
+  markAsRead();
+
+  document.addEventListener('visibilitychange', () => {
+    if(!document.hidden) markAsRead();
+  });
+  window.addEventListener('focus', markAsRead);
 }
 
 // Auto-resume if already logged in on this device
@@ -222,6 +230,7 @@ function listenMessages(){
   messagesRef().orderByChild('ts').on('child_added', (snap) => {
     renderMessage(snap.key, snap.val());
     scrollToBottom();
+    if(!document.hidden && snap.val().sender === PARTNER_USER) markAsRead();
   });
   messagesRef().on('child_changed', (snap) => {
     updateMessageEl(snap.key, snap.val());
@@ -250,6 +259,7 @@ function renderMessage(id, msg){
   const row = document.createElement('div');
   row.className = `msg-row ${mine ? 'mine' : 'theirs'}`;
   row.id = 'm_' + id;
+  if(mine) row.dataset.ts = msg.ts;
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble' + (msg.type !== 'text' ? ' media' : '');
@@ -266,13 +276,15 @@ function renderMessage(id, msg){
     vid.addEventListener('click', () => openLightbox('video', msg.mediaUrl));
     bubble.appendChild(vid);
   } else {
-    bubble.textContent = msg.text || '';
+    bubble.innerHTML = linkify(msg.text || '');
   }
   row.appendChild(bubble);
 
   const meta = document.createElement('div');
   meta.className = 'meta-row';
-  meta.innerHTML = `<span class="time">${formatTime(msg.ts)}</span>` + (msg.edited ? ' <span class="edited-tag">edited</span>' : '');
+  meta.innerHTML = `<span class="time">${formatTime(msg.ts)}</span>` +
+    (msg.edited ? ' <span class="edited-tag">edited</span>' : '') +
+    (mine ? ` <span class="ticks">${tickSvg(false)}</span>` : '');
   row.appendChild(meta);
 
   if(mine && msg.type === 'text'){
@@ -289,17 +301,71 @@ function renderMessage(id, msg){
   }
 
   messagesEl.appendChild(row);
+  if(mine) applyTickState(row, msg.ts);
 }
 
 function updateMessageEl(id, msg){
   const row = document.getElementById('m_' + id);
   if(!row) return;
   const bubble = row.querySelector('.bubble');
-  if(bubble && msg.type === 'text') bubble.textContent = msg.text || '';
+  if(bubble && msg.type === 'text') bubble.innerHTML = linkify(msg.text || '');
+  const mine = msg.sender === CURRENT_USER;
   const meta = row.querySelector('.meta-row');
   if(meta){
-    meta.innerHTML = `<span class="time">${formatTime(msg.ts)}</span>` + (msg.edited ? ' <span class="edited-tag">edited</span>' : '');
+    meta.innerHTML = `<span class="time">${formatTime(msg.ts)}</span>` +
+      (msg.edited ? ' <span class="edited-tag">edited</span>' : '') +
+      (mine ? ` <span class="ticks">${tickSvg(false)}</span>` : '');
+    if(mine) applyTickState(row, msg.ts);
   }
+}
+
+// ---------- Clickable links ----------
+function linkify(text){
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  const urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
+  return escaped.replace(urlRegex, (match) => {
+    const href = match.startsWith('http') ? match : 'https://' + match;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer">${match}</a>`;
+  });
+}
+
+// ---------- Sent / Seen ticks ----------
+let partnerLastReadTs = 0;
+
+function tickSvg(seen){
+  const color = seen ? '#5fc9ff' : 'currentColor';
+  return `<svg class="tick-icon" viewBox="0 0 16 11" width="15" height="11" fill="none">
+    <path d="M1 5.5L4.5 9L11 1.5" stroke="${color}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    ${seen ? '<path d="M5 5.5L8.5 9L15 1.5" stroke="' + color + '" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' : ''}
+  </svg>`;
+}
+
+function applyTickState(row, ts){
+  const tickEl = row.querySelector('.ticks');
+  if(!tickEl) return;
+  const seen = partnerLastReadTs && ts && partnerLastReadTs >= ts;
+  tickEl.innerHTML = tickSvg(!!seen);
+}
+
+function refreshAllTicks(){
+  document.querySelectorAll('.msg-row.mine').forEach((row) => {
+    const ts = Number(row.dataset.ts);
+    if(ts) applyTickState(row, ts);
+  });
+}
+
+function markAsRead(){
+  readsRef(CURRENT_USER).set(firebase.database.ServerValue.TIMESTAMP);
+}
+
+function listenReads(){
+  readsRef(PARTNER_USER).on('value', (snap) => {
+    partnerLastReadTs = snap.val() || 0;
+    refreshAllTicks();
+  });
 }
 
 function scrollToBottom(){
@@ -491,20 +557,23 @@ const installBtn = document.getElementById('installBtn');
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  if(installBtn) installBtn.classList.remove('hidden');
 });
 
 if(installBtn){
   installBtn.addEventListener('click', async () => {
-    if(!deferredInstallPrompt) return;
-    deferredInstallPrompt.prompt();
-    await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    installBtn.classList.add('hidden');
+    if(deferredInstallPrompt){
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      return;
+    }
+    // Prompt not available yet (already installed, or browser needs manual steps)
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if(isIOS){
+      alert('To install: tap the Share button, then "Add to Home Screen".');
+    } else {
+      alert('To install: open the browser menu (⋮) and tap "Install app" or "Add to Home screen".');
+    }
   });
-}
-
-window.addEventListener('appinstalled', () => {
-  if(installBtn) installBtn.classList.add('hidden');
-});
-    
+                         }
+      
