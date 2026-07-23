@@ -178,6 +178,11 @@ html,body{
 }
 .mine .meta-row{ justify-content: flex-end; }
 .edited-tag{ font-style: italic; opacity: 0.8; }
+.ticks{ display:inline-flex; align-items:center; color: var(--muted); }
+.tick-icon{ display:block; }
+
+.bubble a{ color: inherit; text-decoration: underline; word-break: break-all; }
+.theirs .bubble a{ color: var(--ember-soft); }
 
 .msg-actions{
   display:flex; gap: 10px; margin: 0 4px 4px;
