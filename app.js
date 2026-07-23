@@ -237,7 +237,8 @@ function listenMessages(){
     scrollToBottom();
     if(!document.hidden && msg.sender === PARTNER_USER) markAsRead();
     if(msg.ts && msg.ts >= sessionStartTs && msg.type === 'text'){
-      checkForTriggerAnimation(msg.text);
+      const matched = checkForTriggerAnimation(msg.text);
+      if(!matched) checkForPetNameSparkle(msg.text, snap.key);
     }
   });
   messagesRef().on('child_changed', (snap) => {
@@ -579,7 +580,6 @@ function listenReads(){
 function scrollToBottom(){
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
-
 // ---------- Send ----------
 const sendBtn = document.getElementById('sendBtn');
 sendBtn.addEventListener('click', sendText);
@@ -913,16 +913,77 @@ function playCongrats(){
     label: '🎉 Congratulations! 🎉'
   });
 }
+function playKiss(){
+  playEmojiBurst({
+    emojis: ['💋', '😘', '💗'],
+    count: 22, duration: 3000, fontSizeRange: [22, 34],
+    label: 'Muah! 😘'
+  });
+}
+function playSorry(){
+  playEmojiBurst({
+    emojis: ['🤍', '🫂', '💧'],
+    count: 14, duration: 3200, fontSizeRange: [18, 28],
+    flashColor: 'radial-gradient(ellipse at 50% 50%, rgba(120,150,220,0.22), rgba(20,14,30,0))',
+    label: 'Sending a hug 🤗'
+  });
+}
+function playGoodbyeKiss(){
+  playEmojiBurst({
+    emojis: ['👋', '💋', '❤️'],
+    count: 16, duration: 2800, fontSizeRange: [20, 30],
+    label: 'Bye love! 👋💕'
+  });
+}
 
 function checkForTriggerAnimation(text){
+  if(!text) return false;
+  const t = text.toLowerCase();
+  if(/i\s*love\s*you|love\s*(u|you)\b|ভালোবাসি/.test(t)){ playRoseBurst(); return true; }
+  if(/good\s*ni?ght|goodnight/.test(t)){ playGoodNight(); return true; }
+  if(/good\s*morning|goodmorning/.test(t)){ playGoodMorning(); return true; }
+  if(/miss\s*(u|you)\b/.test(t)){ playMissYou(); return true; }
+  if(/happy\s*birthday/.test(t)){ playBirthday(); return true; }
+  if(/congrat/.test(t)){ playCongrats(); return true; }
+  if(/\bkiss(es)?\b|muah|💋|😘/.test(t)){ playKiss(); return true; }
+  if(/\bsorry\b/.test(t)){ playSorry(); return true; }
+  if(/\btata\b|\bbye\b|see\s*you\b/.test(t)){ playGoodbyeKiss(); return true; }
+  return false;
+}
+
+// ---------- Lightweight sparkle for frequent pet names ----------
+function sparkleNearBubble(row){
+  const bubble = row.querySelector('.bubble');
+  if(!bubble) return;
+  const rect = bubble.getBoundingClientRect();
+  const layer = document.createElement('div');
+  layer.className = 'sparkle-layer';
+  layer.style.left = rect.left + 'px';
+  layer.style.top = rect.top + 'px';
+  layer.style.width = rect.width + 'px';
+  layer.style.height = rect.height + 'px';
+  document.body.appendChild(layer);
+
+  const icons = ['💗', '✨', '💕'];
+  for(let i = 0; i < 5; i++){
+    const s = document.createElement('span');
+    s.className = 'sparkle-piece';
+    s.textContent = icons[Math.floor(Math.random() * icons.length)];
+    s.style.left = (Math.random() * 90) + '%';
+    s.style.animationDelay = (Math.random() * 0.2) + 's';
+    layer.appendChild(s);
+  }
+  setTimeout(() => layer.remove(), 1200);
+}
+
+function checkForPetNameSparkle(text, msgId){
   if(!text) return;
   const t = text.toLowerCase();
-  if(/i\s*love\s*you|love\s*(u|you)\b|ভালোবাসি/.test(t)) playRoseBurst();
-  else if(/good\s*ni?ght|goodnight/.test(t)) playGoodNight();
-  else if(/good\s*morning|goodmorning/.test(t)) playGoodMorning();
-  else if(/miss\s*(u|you)\b/.test(t)) playMissYou();
-  else if(/happy\s*birthday/.test(t)) playBirthday();
-  else if(/congrat/.test(t)) playCongrats();
+  const petRegex = /\b(baby|babu|babe|jaan(u)?|sona|shona|pakhi|cutie|sweetheart|honey)\b/;
+  if(petRegex.test(t)){
+    const row = document.getElementById('m_' + msgId);
+    if(row) sparkleNearBubble(row);
+  }
 }
 
 // ---------- PWA: installable app ----------
@@ -958,4 +1019,4 @@ if(installBtn){
       alert('To install: open the browser menu (⋮) and tap "Install app" or "Add to Home screen".');
     }
   });
-    }
+      }
