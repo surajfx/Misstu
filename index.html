@@ -68,8 +68,18 @@
         <div class="partner-status" id="partnerStatus">Offline</div>
       </div>
     </div>
-    <button id="logoutBtn" class="icon-btn" title="Log out">⎋</button>
+    <div class="header-actions">
+      <span id="togetherPill" class="together-pill hidden"></span>
+      <button id="galleryBtn" class="icon-btn" title="Gallery">🖼️</button>
+      <button id="logoutBtn" class="icon-btn" title="Log out">⎋</button>
+    </div>
   </header>
+
+  <div id="pinnedBanner" class="pinned-banner hidden">
+    <span class="pinned-icon">📌</span>
+    <span id="pinnedText" class="pinned-text"></span>
+    <button id="unpinBtn" class="pinned-close" title="Unpin">✕</button>
+  </div>
 
   <main id="messages" class="messages"></main>
 
@@ -92,8 +102,17 @@
     <div class="input-wrap">
       <textarea id="textInput" rows="1" placeholder="Type a message..."></textarea>
     </div>
+    <button id="micBtn" class="icon-btn" title="Record voice message">🎤</button>
     <button id="sendBtn" class="send-btn" title="Send">➤</button>
   </footer>
+
+  <div id="recordingBar" class="recording-bar hidden">
+    <span class="rec-dot"></span>
+    <span id="recordingTime">0:00</span>
+    <span class="recording-hint">Recording voice message...</span>
+    <button id="cancelRecording" class="pinned-close" title="Cancel">✕</button>
+    <button id="sendRecording" class="send-btn" title="Send">➤</button>
+  </div>
 
   <div id="uploadProgress" class="upload-progress hidden">
     <div class="upload-bar"><div id="uploadFill" class="upload-fill"></div></div>
@@ -105,6 +124,29 @@
 <div id="lightbox" class="lightbox hidden">
   <button id="closeLightbox" class="icon-btn lightbox-close">✕</button>
   <div id="lightboxContent" class="lightbox-content"></div>
+</div>
+
+<!-- REACTION PICKER (positioned dynamically via JS) -->
+<div id="reactionPicker" class="reaction-picker hidden">
+  <span class="react-emoji" data-emoji="❤️">❤️</span>
+  <span class="react-emoji" data-emoji="😘">😘</span>
+  <span class="react-emoji" data-emoji="😂">😂</span>
+  <span class="react-emoji" data-emoji="😢">😢</span>
+  <span class="react-emoji" data-emoji="🔥">🔥</span>
+  <span class="react-emoji" data-emoji="👍">👍</span>
+  <button id="pickerPinBtn" class="picker-pin-btn" title="Pin message">📌</button>
+</div>
+
+<!-- GALLERY OVERLAY -->
+<div id="galleryScreen" class="screen hidden gallery-screen">
+  <header class="chat-header">
+    <div class="partner-block">
+      <span class="gallery-title">Gallery</span>
+    </div>
+    <button id="closeGalleryBtn" class="icon-btn" title="Close">✕</button>
+  </header>
+  <div id="galleryGrid" class="gallery-grid"></div>
+  <p id="galleryEmpty" class="gallery-empty hidden">No photos or videos shared yet.</p>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
