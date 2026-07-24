@@ -171,9 +171,18 @@ html,body{
   padding: 16px 12px 6px;
   display:flex; flex-direction: column; gap: 3px;
 }
-.msg-row{ display:flex; max-width: 100%; }
-.msg-row.mine{ justify-content: flex-end; }
-.msg-row.theirs{ justify-content: flex-start; }
+.msg-row{ display:flex; flex-direction: column; max-width: 100%; }
+.msg-row.mine{ align-items: flex-end; }
+.msg-row.theirs{ align-items: flex-start; padding-left: 34px; position: relative; }
+
+.row-avatar{
+  position: absolute; left: 0; bottom: 2px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--ember), #8a5cb8);
+  background-size: cover; background-position: center;
+  display:flex; align-items:center; justify-content:center;
+  font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
 
 .bubble{
   max-width: 74%;
@@ -362,7 +371,10 @@ html,body{
 .recording-hint{ flex: 1; color: var(--muted); font-size: 12.5px; }
 
 /* ---------- GALLERY ---------- */
-.gallery-screen{ z-index: 40; background: var(--dusk-deep); }
+.gallery-screen{
+  position: fixed; inset: 0; z-index: 40;
+  background: var(--dusk-deep);
+}
 .gallery-title{ font-weight: 700; font-size: 16px; }
 .gallery-grid{
   flex: 1; overflow-y: auto; padding: 10px;

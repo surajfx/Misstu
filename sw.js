@@ -1,7 +1,7 @@
 // Minimal service worker — just enough to make the site installable as an app.
 // Caches the core files so the app shell loads instantly on repeat visits.
 
-const CACHE_NAME = 'duo-chat-v5';
+const CACHE_NAME = 'duo-chat-v6';
 const CORE_FILES = [
   './',
   './index.html',

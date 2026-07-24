@@ -373,6 +373,15 @@ function renderMessage(id, msg){
   row.id = 'm_' + id;
   if(mine) row.dataset.ts = msg.ts;
 
+  if(!mine){
+    const av = document.createElement('div');
+    av.className = 'row-avatar';
+    const p = CHAT_USERS[PARTNER_USER];
+    if(p.avatar){ av.style.backgroundImage = `url(${p.avatar})`; }
+    else { av.textContent = p.name.charAt(0).toUpperCase(); }
+    row.appendChild(av);
+  }
+
   const bubble = document.createElement('div');
   const isMedia = msg.type === 'image' || msg.type === 'video';
   bubble.className = 'bubble' + (isMedia ? ' media' : '');
