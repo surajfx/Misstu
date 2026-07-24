@@ -70,6 +70,7 @@
     </div>
     <div class="header-actions">
       <span id="togetherPill" class="together-pill hidden"></span>
+      <button id="themeBtn" class="icon-btn" title="Background">🎨</button>
       <button id="galleryBtn" class="icon-btn" title="Gallery">🖼️</button>
       <button id="logoutBtn" class="icon-btn" title="Log out">⎋</button>
     </div>
@@ -135,6 +136,17 @@
   <span class="react-emoji" data-emoji="🔥">🔥</span>
   <span class="react-emoji" data-emoji="👍">👍</span>
   <button id="pickerPinBtn" class="picker-pin-btn" title="Pin message">📌</button>
+</div>
+
+<!-- BACKGROUND THEME PICKER -->
+<div id="themeScreen" class="screen hidden gallery-screen">
+  <header class="chat-header">
+    <div class="partner-block">
+      <span class="gallery-title">Choose background</span>
+    </div>
+    <button id="closeThemeBtn" class="icon-btn" title="Close">✕</button>
+  </header>
+  <div id="themeList" class="theme-list"></div>
 </div>
 
 <!-- GALLERY OVERLAY -->

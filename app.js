@@ -17,34 +17,98 @@ const typingRef = (who) => roomRef().child(`typing/${who}`);
 const readsRef = (who) => roomRef().child(`reads/${who}`);
 const pinnedRef = () => roomRef().child('pinned');
 
-// ---------- Falling rose petals + hearts background ----------
-function initPetals(){
-  const canvas = document.getElementById('stars'); // kept original id, just draws petals now
+// ---------- Themed animated backgrounds ----------
+const BG_THEMES = [
+  { id: 'roses',   name: '🌹 Rose Petals',  top: '#4a1c2e', bottom: '#1c0f16', mode: 'fall',
+    petalGrad: ['rgba(255,158,181,0.95)', 'rgba(196,42,90,0.95)'], heartColor: 'rgba(255,99,138,0.9)', shapes: ['petal','petal','petal','heart'] },
+  { id: 'stars',   name: '✨ Starry Night', top: '#2f2050', bottom: '#150f24', mode: 'twinkle',
+    starColor: '245,242,251' },
+  { id: 'sakura',  name: '🌸 Sakura',       top: '#3a2650', bottom: '#1c1430', mode: 'fall',
+    petalGrad: ['rgba(255,215,236,0.95)', 'rgba(248,166,208,0.95)'], shapes: ['petal'] },
+  { id: 'sunset',  name: '🌅 Sunset Glow',  top: '#5c2a1e', bottom: '#231018', mode: 'rise',
+    heartColor: 'rgba(255,150,110,0.85)', shapes: ['heart'] },
+  { id: 'ocean',   name: '🌊 Ocean Dusk',   top: '#123a4a', bottom: '#0d1b26', mode: 'rise',
+    bubble: true, bubbleColor: 'rgba(160,220,255,0.35)', shapes: ['bubble'] },
+  { id: 'minimal', name: '🌙 Minimal Dark', top: '#17141c', bottom: '#100e14', mode: 'none' }
+];
+
+let bgRafId = null;
+let bgResizeHandler = null;
+
+function applyBackgroundTheme(themeId){
+  const theme = BG_THEMES.find((t) => t.id === themeId) || BG_THEMES[0];
+  localStorage.setItem('duo_bg_theme', theme.id);
+  const canvas = document.getElementById('stars');
+  canvas.style.background = `radial-gradient(ellipse at 30% 0%, ${theme.top} 0%, ${theme.bottom} 65%)`;
+
+  if(bgRafId) cancelAnimationFrame(bgRafId);
+  if(bgResizeHandler) window.removeEventListener('resize', bgResizeHandler);
   const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if(theme.mode === 'none'){ return; }
+  if(theme.mode === 'twinkle') runTwinkleTheme(canvas, ctx, theme);
+  else runParticleTheme(canvas, ctx, theme);
+
+  highlightActiveThemeSwatch(theme.id);
+}
+
+function runTwinkleTheme(canvas, ctx, theme){
+  let w, h, stars = [];
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    stars = Array.from({ length: 90 }, () => ({
+      x: Math.random()*w, y: Math.random()*h,
+      r: Math.random()*1.3 + 0.3, s: Math.random()*0.02 + 0.005,
+      phase: Math.random()*Math.PI*2
+    }));
+  }
+  function draw(t){
+    ctx.clearRect(0, 0, w, h);
+    for(const st of stars){
+      const alpha = 0.35 + 0.5*Math.abs(Math.sin(t*st.s + st.phase));
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(${theme.starColor},${alpha})`;
+      ctx.fill();
+    }
+    bgRafId = requestAnimationFrame(draw);
+  }
+  bgResizeHandler = resize;
+  window.addEventListener('resize', resize);
+  resize();
+  bgRafId = requestAnimationFrame(draw);
+}
+
+function runParticleTheme(canvas, ctx, theme){
   let w, h, particles = [];
-  const COUNT = 42;
+  const COUNT = theme.bubble ? 30 : 42;
+  const rising = theme.mode === 'rise';
 
   function makeParticle(spawnAnywhereY){
-    const isHeart = Math.random() < 0.28;
+    const shape = theme.shapes[Math.floor(Math.random() * theme.shapes.length)];
+    const isHeart = shape === 'heart';
+    const isBubble = shape === 'bubble';
     return {
-      type: isHeart ? 'heart' : 'petal',
+      type: shape,
       x: Math.random()*w,
-      y: spawnAnywhereY ? Math.random()*h : -20 - Math.random()*60,
-      size: isHeart ? (6 + Math.random()*6) : (7 + Math.random()*7),
-      speed: 0.35 + Math.random()*0.55,
+      y: spawnAnywhereY ? Math.random()*h : (rising ? h + 20 + Math.random()*60 : -20 - Math.random()*60),
+      size: isBubble ? (4 + Math.random()*8) : (isHeart ? (6 + Math.random()*6) : (7 + Math.random()*7)),
+      speed: (isBubble ? 0.3 + Math.random()*0.4 : 0.35 + Math.random()*0.55) * (rising ? -1 : 1),
       sway: 0.6 + Math.random()*1.2,
       swayFreq: 0.0006 + Math.random()*0.0008,
       phase: Math.random()*Math.PI*2,
       rot: Math.random()*Math.PI*2,
       rotSpeed: (Math.random()-0.5) * 0.01,
-      opacity: 0.45 + Math.random()*0.4
+      opacity: 0.4 + Math.random()*0.4
     };
   }
 
   function resize(){
     w = canvas.width = window.innerWidth;
     h = canvas.height = window.innerHeight;
-    particles = Array.from({length: COUNT}, () => makeParticle(true));
+    particles = Array.from({ length: COUNT }, () => makeParticle(true));
   }
 
   function drawPetal(p){
@@ -54,8 +118,8 @@ function initPetals(){
     ctx.globalAlpha = p.opacity;
     const s = p.size;
     const grad = ctx.createLinearGradient(-s, -s, s, s);
-    grad.addColorStop(0, 'rgba(255,158,181,0.95)');
-    grad.addColorStop(1, 'rgba(196,42,90,0.95)');
+    grad.addColorStop(0, theme.petalGrad[0]);
+    grad.addColorStop(1, theme.petalGrad[1]);
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.moveTo(0, -s);
@@ -64,14 +128,13 @@ function initPetals(){
     ctx.fill();
     ctx.restore();
   }
-
   function drawHeart(p){
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(p.rot);
     ctx.globalAlpha = p.opacity;
     const s = p.size;
-    ctx.fillStyle = 'rgba(255,99,138,0.9)';
+    ctx.fillStyle = theme.heartColor;
     ctx.beginPath();
     ctx.moveTo(0, s*0.35);
     ctx.bezierCurveTo(s, -s*0.55, s*0.5, -s*1.25, 0, -s*0.45);
@@ -79,26 +142,66 @@ function initPetals(){
     ctx.fill();
     ctx.restore();
   }
+  function drawBubble(p){
+    ctx.save();
+    ctx.globalAlpha = p.opacity;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fillStyle = theme.bubbleColor;
+    ctx.fill();
+    ctx.restore();
+  }
 
   function draw(t){
-    ctx.clearRect(0,0,w,h);
+    ctx.clearRect(0, 0, w, h);
     for(const p of particles){
       p.y += p.speed;
       p.x += Math.sin(t*p.swayFreq + p.phase) * p.sway * 0.05;
       p.rot += p.rotSpeed;
-      if(p.y - p.size > h){
-        Object.assign(p, makeParticle(false));
-      }
-      if(p.type === 'heart') drawHeart(p); else drawPetal(p);
+      const offscreen = rising ? (p.y + p.size < 0) : (p.y - p.size > h);
+      if(offscreen) Object.assign(p, makeParticle(false));
+      if(p.type === 'bubble') drawBubble(p);
+      else if(p.type === 'heart') drawHeart(p);
+      else drawPetal(p);
     }
-    requestAnimationFrame(draw);
+    bgRafId = requestAnimationFrame(draw);
   }
 
+  bgResizeHandler = resize;
   window.addEventListener('resize', resize);
   resize();
-  requestAnimationFrame(draw);
+  bgRafId = requestAnimationFrame(draw);
 }
-initPetals();
+
+applyBackgroundTheme(localStorage.getItem('duo_bg_theme') || 'roses');
+
+// ---------- Background theme picker UI ----------
+function buildThemePicker(){
+  const list = document.getElementById('themeList');
+  if(!list || list.children.length) return;
+  BG_THEMES.forEach((theme) => {
+    const btn = document.createElement('button');
+    btn.className = 'theme-swatch';
+    btn.dataset.themeId = theme.id;
+    btn.style.background = `linear-gradient(160deg, ${theme.top}, ${theme.bottom})`;
+    btn.innerHTML = `<span>${theme.name}</span>`;
+    btn.addEventListener('click', () => applyBackgroundTheme(theme.id));
+    list.appendChild(btn);
+  });
+  highlightActiveThemeSwatch(localStorage.getItem('duo_bg_theme') || 'roses');
+}
+function highlightActiveThemeSwatch(themeId){
+  document.querySelectorAll('.theme-swatch').forEach((el) => {
+    el.classList.toggle('active', el.dataset.themeId === themeId);
+  });
+}
+document.getElementById('themeBtn')?.addEventListener('click', () => {
+  buildThemePicker();
+  document.getElementById('themeScreen').classList.remove('hidden');
+});
+document.getElementById('closeThemeBtn')?.addEventListener('click', () => {
+  document.getElementById('themeScreen').classList.add('hidden');
+});
 
 // ---------- Lock screen ----------
 const whoBtns = document.querySelectorAll('.who-btn');
@@ -580,6 +683,7 @@ function listenReads(){
 function scrollToBottom(){
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
+
 // ---------- Send ----------
 const sendBtn = document.getElementById('sendBtn');
 sendBtn.addEventListener('click', sendText);
@@ -1019,4 +1123,4 @@ if(installBtn){
       alert('To install: open the browser menu (⋮) and tap "Install app" or "Add to Home screen".');
     }
   });
-      }
+}
